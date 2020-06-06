@@ -1,8 +1,7 @@
-# Dependencies
-.psci_modules
-bower_components
+.cache
+dist
 node_modules
-
-# Generated files
-.psci
 output
+package-lock.json
+.spago
+.psc-ide-port
