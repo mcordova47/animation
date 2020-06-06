@@ -21,7 +21,8 @@
   "homepage": "https://github.com/mcordova47/animation#readme",
   "dependencies": {
     "react": "^16.13.1",
-    "react-dom": "^16.13.1"
+    "react-dom": "^16.13.1",
+    "react-motion": "^0.5.2"
   },
   "devDependencies": {
     "parcel": "^1.12.4",
