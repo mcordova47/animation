@@ -5,4 +5,3 @@ output
 package-lock.json
 .spago
 .psc-ide-port
-.vscode
