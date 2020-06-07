@@ -5,6 +5,7 @@ module Components.ReactMotion
   , SpringHelperConfig
   , SpringHelperConfig'
   , interpolatingFunction
+  , jump
   , motion
   , spring
   ) where
@@ -15,25 +16,40 @@ import Data.Function.Uncurried (Fn2, runFn2)
 import Data.Maybe (Maybe)
 import Data.Nullable (Nullable, toNullable)
 import Elmish (ReactElement, createElement')
-import Elmish.Foreign (class CanPassToJavaScript)
-import Elmish.HTML (CSS)
-import Elmish.React.Import (EmptyProps, ImportedReactComponent, ImportedReactComponentConstructor)
+import Elmish.Foreign (class CanPassToJavaScript, Foreign)
+import Elmish.React.Import (ImportedReactComponent, ImportedReactComponentConstructor)
+import Foreign (unsafeToForeign)
+import Type.Row.Homogeneous (class Homogeneous)
+import Util.Record (class RowSameLabels)
 
-type Props r =
-  ( render :: InterpolatingFunction
-  , style :: CSS
-  , defaultStyle :: CSS
+type Props style plainStyle r =
+  ( render :: InterpolatingFunction plainStyle
+  , style :: style
   | r
   )
 
-newtype InterpolatingFunction = InterpolatingFunction (CSS -> ReactElement)
-instance jsInterpolatingFunction :: CanPassToJavaScript InterpolatingFunction
+type OptProps plainStyle r =
+  ( defaultStyle :: plainStyle
+  | r
+  )
 
-interpolatingFunction :: (CSS -> ReactElement) -> InterpolatingFunction
-interpolatingFunction = InterpolatingFunction
+newtype InterpolatingFunction style = InterpolatingFunction (style -> ReactElement)
+instance jsInterpolatingFunction :: CanPassToJavaScript (InterpolatingFunction a)
 
-motion :: ImportedReactComponentConstructor Props EmptyProps
-motion = createElement' motion_
+interpolatingFunction :: forall plainStyle
+   . Homogeneous plainStyle Number
+  => ({ | plainStyle } -> ReactElement)
+  -> InterpolatingFunction { | plainStyle }
+interpolatingFunction =
+  InterpolatingFunction
+
+motion :: forall style plainStyle
+   . Homogeneous style OpaqueConfig
+  => Homogeneous plainStyle Number
+  => RowSameLabels style plainStyle
+  => ImportedReactComponentConstructor (Props { | style } { | plainStyle }) (OptProps { | plainStyle })
+motion =
+  createElement' motion_
 
 type SpringHelperConfig = SpringHelperConfig' Maybe
 type SpringHelperConfig' f =
@@ -42,9 +58,12 @@ type SpringHelperConfig' f =
   , precision :: f Number
   }
 
+newtype OpaqueConfig = OpaqueConfig Foreign
+instance jsOpaqueConfig :: CanPassToJavaScript OpaqueConfig
+
 spring :: Number -> Maybe SpringHelperConfig -> OpaqueConfig
 spring val config =
-  runFn2 spring_ val $ toNullable $ jsConfig <$> config
+  OpaqueConfig $ runFn2 spring_ val $ toNullable $ jsConfig <$> config
   where
     jsConfig c =
       { stiffness: toNullable c.stiffness
@@ -52,6 +71,9 @@ spring val config =
       , precision: toNullable c.precision
       }
 
+jump :: Number -> OpaqueConfig
+jump =
+  OpaqueConfig <<< unsafeToForeign
+
 foreign import motion_ :: ImportedReactComponent
-foreign import data OpaqueConfig :: Type
-foreign import spring_ :: Fn2 Number (Nullable (SpringHelperConfig' Nullable)) OpaqueConfig
+foreign import spring_ :: Fn2 Number (Nullable (SpringHelperConfig' Nullable)) Foreign

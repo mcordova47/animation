@@ -8,6 +8,7 @@ import Effect (Effect)
 import Elmish (ComponentDef, bimap, boot, handle, lmap, (>#<))
 import Elmish.HTML.Styled as S
 import Elmish.React.DOM as R
+import Examples.Oscillation as Oscillation
 import Examples.Simple as Simple
 
 main :: Effect Unit
@@ -20,25 +21,27 @@ main =
 data Message
   = SwitchTab Tab
   | SimpleMsg Simple.Message
+  | OscillationMsg Oscillation.Message
 
 type State =
   { currentTab :: Tab
   , simple :: Simple.State
+  , oscillation :: Oscillation.State
   }
 
 data Tab
   = Simple
-  | CollapsiblePanel
+  | Oscillation
 derive instance eqTab :: Eq Tab
 
 displayTab :: Tab -> String
 displayTab = case _ of
   Simple -> "Simple"
-  CollapsiblePanel -> "Collapsible Panel"
+  Oscillation -> "Oscillation"
 
 allTabs :: Array Tab
 allTabs =
-  [Simple, CollapsiblePanel]
+  [Simple, Oscillation]
 
 def :: forall m. Monad m => ComponentDef m Message State
 def =
@@ -46,9 +49,11 @@ def =
   where
     init = do
       simple <- lmap SimpleMsg Simple.init
+      oscillation <- lmap OscillationMsg Oscillation.init
       pure
         { currentTab: Simple
         , simple
+        , oscillation
         }
     view state dispatch =
       R.fragment
@@ -63,11 +68,13 @@ def =
               case state.currentTab of
                 Simple ->
                   Simple.view state.simple (dispatch >#< SimpleMsg)
-                CollapsiblePanel ->
-                  R.empty
+                Oscillation ->
+                  Oscillation.view state.oscillation (dispatch >#< OscillationMsg)
         ]
     update state = case _ of
       SwitchTab tab ->
         pure state { currentTab = tab }
       SimpleMsg msg ->
         bimap SimpleMsg (state { simple = _ }) $ Simple.update state.simple msg
+      OscillationMsg msg ->
+        bimap OscillationMsg (state { oscillation = _ }) $ Oscillation.update state.oscillation msg

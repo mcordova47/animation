@@ -25,15 +25,21 @@ init :: forall m. Transition m Message State
 init =
   pure { size: 0.0 }
 
+type PlainStyle =
+   { height :: Number
+   , width :: Number
+   }
+
 view :: State -> DispatchMsgFn Message -> ReactElement
 view state dispatch =
   S.div "text-center"
     [ S.button_ "btn btn-outline-primary" { onClick: handle dispatch ToggleSize } "Toggle Visibility"
     , motion
-        { defaultStyle: S.css { height: 0, width: 0 }
-        , style: S.css { height: spring state.size Nothing, width: spring state.size Nothing }
-        , render: interpolatingFunction \style ->
-            S.div_ "box rounded mt-2 mx-auto" { style } R.empty
+        { style: { height: spring state.size Nothing, width: spring state.size Nothing }
+        , render: interpolatingFunction \(style :: PlainStyle) ->
+            S.div_ "box rounded mt-2 mx-auto"
+              { style: S.css style }
+              R.empty
         }
     ]
 
