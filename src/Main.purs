@@ -8,7 +8,7 @@ import Effect (Effect)
 import Elmish (ComponentDef, bimap, boot, handle, lmap, (>#<))
 import Elmish.HTML.Styled as S
 import Elmish.React.DOM as R
-import Examples.Measuring as Measuring
+import Examples.Collapsing as Collapsing
 import Examples.Oscillation as Oscillation
 import Examples.Simple as Simple
 
@@ -23,30 +23,30 @@ data Message
   = SwitchTab Tab
   | SimpleMsg Simple.Message
   | OscillationMsg Oscillation.Message
-  | MeasuringMsg Measuring.Message
+  | CollapsingMsg Collapsing.Message
 
 type State =
   { currentTab :: Tab
   , simple :: Simple.State
   , oscillation :: Oscillation.State
-  , measuring :: Measuring.State
+  , collapsing :: Collapsing.State
   }
 
 data Tab
   = Simple
   | Oscillation
-  | Measuring
+  | Collapsing
 derive instance eqTab :: Eq Tab
 
 displayTab :: Tab -> String
 displayTab = case _ of
   Simple -> "Simple"
   Oscillation -> "Oscillation"
-  Measuring -> "Measuring"
+  Collapsing -> "Collapsing"
 
 allTabs :: Array Tab
 allTabs =
-  [Simple, Oscillation, Measuring]
+  [Simple, Oscillation, Collapsing]
 
 def :: forall m. Monad m => ComponentDef m Message State
 def =
@@ -55,12 +55,12 @@ def =
     init = do
       simple <- lmap SimpleMsg Simple.init
       oscillation <- lmap OscillationMsg Oscillation.init
-      measuring <- lmap MeasuringMsg Measuring.init
+      collapsing <- lmap CollapsingMsg Collapsing.init
       pure
         { currentTab: Simple
         , simple
         , oscillation
-        , measuring
+        , collapsing
         }
     view state dispatch =
       R.fragment
@@ -77,8 +77,8 @@ def =
                   Simple.view state.simple (dispatch >#< SimpleMsg)
                 Oscillation ->
                   Oscillation.view state.oscillation (dispatch >#< OscillationMsg)
-                Measuring ->
-                  Measuring.view state.measuring (dispatch >#< MeasuringMsg)
+                Collapsing ->
+                  Collapsing.view state.collapsing (dispatch >#< CollapsingMsg)
         ]
     update state = case _ of
       SwitchTab tab ->
@@ -87,5 +87,5 @@ def =
         bimap SimpleMsg (state { simple = _ }) $ Simple.update state.simple msg
       OscillationMsg msg ->
         bimap OscillationMsg (state { oscillation = _ }) $ Oscillation.update state.oscillation msg
-      MeasuringMsg msg ->
-        bimap MeasuringMsg (state { measuring = _ }) $ Measuring.update state.measuring msg
+      CollapsingMsg msg ->
+        bimap CollapsingMsg (state { collapsing = _ }) $ Collapsing.update state.collapsing msg

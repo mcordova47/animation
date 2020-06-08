@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/mcordova47/animation#readme",
   "dependencies": {
+    "@primer/octicons-react": "^9.6.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-motion": "^0.5.2",

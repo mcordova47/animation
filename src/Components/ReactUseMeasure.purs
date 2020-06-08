@@ -9,7 +9,7 @@ module Components.ReactUseMeasure
 
 import Prelude
 
-import Component.ReactRef (ReactRef, attachRef)
+import Component.ReactRef (ReactRef)
 import Data.Function.Uncurried (Fn2, mkFn2)
 import Elmish (ReactElement, createElement')
 import Elmish.Foreign (class CanPassToJavaScript)
@@ -43,16 +43,12 @@ milliseconds =
 newtype RenderFn = RenderFn (Fn2 ReactRef RectReadOnly ReactElement)
 instance jsRenderFn :: CanPassToJavaScript RenderFn
 
-useMeasure :: (RectReadOnly -> ReactElement) -> ReactElement
+useMeasure :: (ReactRef -> RectReadOnly -> ReactElement) -> ReactElement
 useMeasure render =
-  createElement' useMeasure_ { render: renderFn render }
+  createElement' useMeasure_ { render: RenderFn $ mkFn2 render }
 
-useMeasure' :: Options -> (RectReadOnly -> ReactElement) -> ReactElement
+useMeasure' :: Options -> (ReactRef -> RectReadOnly -> ReactElement) -> ReactElement
 useMeasure' options render =
-  createElement' useMeasure_ $ Record.merge options { render: renderFn render }
-
-renderFn :: (RectReadOnly -> ReactElement) -> RenderFn
-renderFn fn =
-  RenderFn $ mkFn2 \ref bounds -> attachRef ref $ fn bounds
+  createElement' useMeasure_ $ Record.merge options { render: RenderFn $ mkFn2 render }
 
 foreign import useMeasure_ :: ImportedReactComponent
