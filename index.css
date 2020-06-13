@@ -22,3 +22,12 @@ body {
 .cursor-pointer {
   cursor: pointer;
 }
+
+.main-nav .nav-link:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.main-nav {
+  width: 15rem;
+}

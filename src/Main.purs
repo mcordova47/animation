@@ -4,12 +4,16 @@ module Main
 
 import Prelude
 
+import Data.Array (groupBy)
+import Data.Array.NonEmpty as NE
+import Data.Function (on)
 import Effect (Effect)
 import Elmish (ComponentDef, bimap, boot, handle, lmap, (>#<))
 import Elmish.HTML.Styled as S
 import Elmish.React.DOM as R
 import Examples.Collapsing as Collapsing
 import Examples.Oscillation as Oscillation
+import Examples.ReactSpring.Simple as SpringSimple
 import Examples.Simple as Simple
 
 main :: Effect Unit
@@ -24,29 +28,57 @@ data Message
   | SimpleMsg Simple.Message
   | OscillationMsg Oscillation.Message
   | CollapsingMsg Collapsing.Message
+  | STSimpleMsg SpringSimple.Message
 
 type State =
   { currentTab :: Tab
   , simple :: Simple.State
   , oscillation :: Oscillation.State
   , collapsing :: Collapsing.State
+  , stSimple :: SpringSimple.State
   }
 
 data Tab
+  = Motion MotionTab
+  | Spring SpringTab
+derive instance eqTab :: Eq Tab
+
+data MotionTab
   = Simple
   | Oscillation
   | Collapsing
-derive instance eqTab :: Eq Tab
+derive instance eqMotionTab :: Eq MotionTab
 
-displayTab :: Tab -> String
-displayTab = case _ of
-  Simple -> "Simple"
-  Oscillation -> "Oscillation"
-  Collapsing -> "Collapsing"
+data SpringTab
+  = STSimple
+derive instance eqSpringTab :: Eq SpringTab
+
+tabLabel :: Tab -> String
+tabLabel = case _ of
+  Motion Simple -> "Simple"
+  Motion Oscillation -> "Oscillation"
+  Motion Collapsing -> "Collapsing"
+  Spring STSimple -> "Simple"
+
+tabCategory :: Tab -> String
+tabCategory = case _ of
+  Motion _ -> "React Motion"
+  Spring _ -> "React Spring"
+
+tabKey :: Tab -> String
+tabKey = case _ of
+  Motion Simple -> "simple"
+  Motion Oscillation -> "oscillation"
+  Motion Collapsing -> "collapsing"
+  Spring STSimple -> "st-simple"
 
 allTabs :: Array Tab
 allTabs =
-  [Simple, Oscillation, Collapsing]
+  [ Motion Simple
+  , Motion Oscillation
+  , Motion Collapsing
+  , Spring STSimple
+  ]
 
 def :: forall m. Monad m => ComponentDef m Message State
 def =
@@ -56,30 +88,42 @@ def =
       simple <- lmap SimpleMsg Simple.init
       oscillation <- lmap OscillationMsg Oscillation.init
       collapsing <- lmap CollapsingMsg Collapsing.init
+      stSimple <- lmap STSimpleMsg SpringSimple.init
       pure
-        { currentTab: Simple
+        { currentTab: Motion Simple
         , simple
         , oscillation
         , collapsing
+        , stSimple
         }
     view state dispatch =
       R.fragment
-        [ S.ul "nav nav-pills mt-3 ml-3" $
-            allTabs <#> \tab ->
-              S.li "nav-item" $
-                S.button_ ("btn btn-link nav-link" <> if tab == state.currentTab then " active" else "")
-                { onClick: handle dispatch $ SwitchTab tab } $
-                  displayTab tab
+        [ S.div "main-nav position-absolute p-3" $
+            S.div "card border-0" $
+              S.div "card-body bg-light rounded" $
+                allTabs # groupBy ((==) `on` tabCategory) <#> renderCategory
         , S.div "row pt-4 vh-100" $
-            S.div "col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3"
+            S.div_ "col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3" { key: tabKey state.currentTab }
               case state.currentTab of
-                Simple ->
+                Motion Simple ->
                   Simple.view state.simple (dispatch >#< SimpleMsg)
-                Oscillation ->
+                Motion Oscillation ->
                   Oscillation.view state.oscillation (dispatch >#< OscillationMsg)
-                Collapsing ->
+                Motion Collapsing ->
                   Collapsing.view state.collapsing (dispatch >#< CollapsingMsg)
+                Spring STSimple ->
+                  SpringSimple.view state.stSimple (dispatch >#< STSimpleMsg)
         ]
+      where
+        renderCategory tabs | category <- tabCategory (NE.head tabs) = R.fragment $
+          [ S.h6 "" category
+          , S.ul "nav nav-pills flex-column pt-1 pb-3" $
+              NE.toArray tabs <#> \tab ->
+                S.li "nav-item" $
+                  S.button_ ("btn btn-link nav-link" <> if tab == state.currentTab then " active" else "")
+                  { onClick: handle dispatch $ SwitchTab tab } $
+                    tabLabel tab
+          ]
     update state = case _ of
       SwitchTab tab ->
         pure state { currentTab = tab }
@@ -89,3 +133,5 @@ def =
         bimap OscillationMsg (state { oscillation = _ }) $ Oscillation.update state.oscillation msg
       CollapsingMsg msg ->
         bimap CollapsingMsg (state { collapsing = _ }) $ Collapsing.update state.collapsing msg
+      STSimpleMsg msg ->
+        bimap STSimpleMsg (state { stSimple = _ }) $ SpringSimple.update state.stSimple msg
