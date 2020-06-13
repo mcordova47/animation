@@ -4,6 +4,7 @@ module Main
 
 import Prelude
 
+import Components.ReactSpring.Transition (item, keyFn, renderFn, transition)
 import Data.Array (groupBy)
 import Data.Array.NonEmpty as NE
 import Data.Function (on)
@@ -103,16 +104,25 @@ def =
               S.div "card-body bg-light rounded" $
                 allTabs # groupBy ((==) `on` tabCategory) <#> renderCategory
         , S.div "row pt-4 vh-100" $
-            S.div_ "col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3" { key: tabKey state.currentTab }
-              case state.currentTab of
-                Motion Simple ->
-                  Simple.view state.simple (dispatch >#< SimpleMsg)
-                Motion Oscillation ->
-                  Oscillation.view state.oscillation (dispatch >#< OscillationMsg)
-                Motion Collapsing ->
-                  Collapsing.view state.collapsing (dispatch >#< CollapsingMsg)
-                Spring STSimple ->
-                  SpringSimple.view state.stSimple (dispatch >#< STSimpleMsg)
+            transition
+              { items: item state.currentTab
+              , keys: keyFn tabKey
+              , from: { opacity: 0.0, transform: "translate3d(100%,0,0)" }
+              , enter: { opacity: 1.0, transform: "translate3d(0%,0,0)" }
+              , leave: { opacity: 0.0, transform: "translate3d(-50%,0,0)" }
+              , render: renderFn \item style ->
+                  S.div_ "col-12 col-md-8 offset-md-2 col-lg-6 offset-lg-3 position-absolute"
+                    { style: S.css style }
+                    case item of
+                      Motion Simple ->
+                        Simple.view state.simple (dispatch >#< SimpleMsg)
+                      Motion Oscillation ->
+                        Oscillation.view state.oscillation (dispatch >#< OscillationMsg)
+                      Motion Collapsing ->
+                        Collapsing.view state.collapsing (dispatch >#< CollapsingMsg)
+                      Spring STSimple ->
+                        SpringSimple.view state.stSimple (dispatch >#< STSimpleMsg)
+              }
         ]
       where
         renderCategory tabs | category <- tabCategory (NE.head tabs) = R.fragment $

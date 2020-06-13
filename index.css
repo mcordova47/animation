@@ -3,7 +3,7 @@ body {
 }
 
 .box {
-  background: #ff5722;
+  background: linear-gradient(-45deg, #f6d365, #fda085);
 }
 
 .oscillating-box {
