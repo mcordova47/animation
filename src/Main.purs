@@ -14,6 +14,7 @@ import Elmish.HTML.Styled as S
 import Elmish.React.DOM as R
 import Examples.Collapsing as Collapsing
 import Examples.Oscillation as Oscillation
+import Examples.ReactSpring.FloatingButton as FloatingButton
 import Examples.ReactSpring.Simple as SpringSimple
 import Examples.Simple as Simple
 
@@ -30,6 +31,7 @@ data Message
   | OscillationMsg Oscillation.Message
   | CollapsingMsg Collapsing.Message
   | STSimpleMsg SpringSimple.Message
+  | FloatingButtonMsg FloatingButton.Message
 
 type State =
   { currentTab :: Tab
@@ -37,6 +39,7 @@ type State =
   , oscillation :: Oscillation.State
   , collapsing :: Collapsing.State
   , stSimple :: SpringSimple.State
+  , floatingButton :: FloatingButton.State
   }
 
 data Tab
@@ -52,6 +55,7 @@ derive instance eqMotionTab :: Eq MotionTab
 
 data SpringTab
   = STSimple
+  | FloatingButton
 derive instance eqSpringTab :: Eq SpringTab
 
 tabLabel :: Tab -> String
@@ -60,6 +64,7 @@ tabLabel = case _ of
   Motion Oscillation -> "Oscillation"
   Motion Collapsing -> "Collapsing"
   Spring STSimple -> "Simple"
+  Spring FloatingButton -> "Floating Button"
 
 tabCategory :: Tab -> String
 tabCategory = case _ of
@@ -72,6 +77,7 @@ tabKey = case _ of
   Motion Oscillation -> "oscillation"
   Motion Collapsing -> "collapsing"
   Spring STSimple -> "st-simple"
+  Spring FloatingButton -> "floating-button"
 
 allTabs :: Array Tab
 allTabs =
@@ -79,6 +85,7 @@ allTabs =
   , Motion Oscillation
   , Motion Collapsing
   , Spring STSimple
+  , Spring FloatingButton
   ]
 
 def :: forall m. Monad m => ComponentDef m Message State
@@ -90,12 +97,14 @@ def =
       oscillation <- lmap OscillationMsg Oscillation.init
       collapsing <- lmap CollapsingMsg Collapsing.init
       stSimple <- lmap STSimpleMsg SpringSimple.init
+      floatingButton <- lmap FloatingButtonMsg FloatingButton.init
       pure
         { currentTab: Motion Simple
         , simple
         , oscillation
         , collapsing
         , stSimple
+        , floatingButton
         }
     view state dispatch =
       R.fragment
@@ -122,6 +131,8 @@ def =
                         Collapsing.view state.collapsing (dispatch >#< CollapsingMsg)
                       Spring STSimple ->
                         SpringSimple.view state.stSimple (dispatch >#< STSimpleMsg)
+                      Spring FloatingButton ->
+                        FloatingButton.view state.floatingButton (dispatch >#< FloatingButtonMsg)
               }
         ]
       where
@@ -145,3 +156,5 @@ def =
         bimap CollapsingMsg (state { collapsing = _ }) $ Collapsing.update state.collapsing msg
       STSimpleMsg msg ->
         bimap STSimpleMsg (state { stSimple = _ }) $ SpringSimple.update state.stSimple msg
+      FloatingButtonMsg msg ->
+        bimap FloatingButtonMsg (state { floatingButton = _ }) $ FloatingButton.update state.floatingButton msg

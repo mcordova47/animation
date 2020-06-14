@@ -31,3 +31,13 @@ body {
 .main-nav {
   width: 15rem;
 }
+
+.floating-action-button {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+}
+
+.floating-action-button:hover {
+  opacity: 0.9;
+}
